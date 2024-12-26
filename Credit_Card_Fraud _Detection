@@ -1,0 +1,334 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import IsolationForest
+from sklearn.metrics import classification_report, confusion_matrix, roc_auc_score, accuracy_score
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+
+#mounting drive
+'''from google.colab import drive
+
+# Mount your Google Drive
+drive.mount('/content/drive')'''
+
+
+# loading dataset
+data=pd.read_csv('/content/drive/MyDrive/creditcard_for_fraud_detection.csv')
+ # first 5 rows of the dataset
+data.head()
+data.keys()
+
+#SELECT 1st row and all the columns
+#data.iloc[0,:]
+data.iloc[0].values
+
+
+data.describe()
+
+
+
+# dataset informations
+data.info()
+
+# checking the number of missing values in each column
+data.isnull().sum()
+
+sc = StandardScaler()
+data['Amount'] = sc.fit_transform(pd.DataFrame(data['Amount']))
+
+data.head()
+
+data = data.drop(['Time'], axis =1)
+
+#checking for any duplicate value
+data.duplicated().any()
+
+#removing duplicte values
+data=data.drop_duplicates()
+
+data.shape
+
+
+# distribution of legit transactions & fraudulent transactions
+data['Class'].value_counts()
+
+data.head()
+
+
+x = data.drop('Class', axis = 1)
+y=data['Class']
+
+from sklearn.model_selection import train_test_split
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 42)
+
+import numpy as np
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
+
+classifier = {
+    "Logistic Regression": LogisticRegression(),
+    "Decision Tree Classifier": DecisionTreeClassifier()
+}
+
+for name, clf in classifier.items():
+    print(f"\n=========={name}===========")
+    clf.fit(x_train, y_train)
+    y_pred = clf.predict(x_test)
+    print(f"\n Accuaracy: {accuracy_score(y_test, y_pred)}")
+    print(f"\n Precision: {precision_score(y_test, y_pred)}")
+    print(f"\n Recall: {recall_score(y_test, y_pred)}")
+    print(f"\n F1 Score: {f1_score(y_test, y_pred)}")
+
+plt.scatter(data.iloc[:,0],data.iloc[:,1])
+
+clf=IsolationForest(contamination=0.001)
+clf.fit(data)
+predictions=clf.predict(data)
+
+'''print(predictions)
+print(type(predictions))'''
+
+import numpy as np
+
+index=np.where(predictions==-1)
+print(index)
+
+print(len(index))
+
+x=data.values
+
+
+#index=np.where(predictions==-1)
+plt.scatter(data.iloc[:,0],data.iloc[:,1])
+plt.scatter(x[index,0],x[index,1],edgecolors='r')
+
+#get the fraud and normal data
+fraud=data[data['Class']==1]
+normal=data[data['Class']==0]
+
+print(fraud.shape,normal.shape)
+
+'''f, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+f.suptitle('Amount per transaction by class')
+bins = 50
+ax1.hist(fraud.Amount, bins = bins)
+ax1.set_title('Fraud')
+ax2.hist(normal.Amount, bins = bins)
+ax2.set_title('Normal')
+plt.xlabel('Amount ($)')
+plt.ylabel('Number of Transactions')
+plt.xlim((0, 20000))
+
+plt.yscale('log')
+
+# replacing plt.yscale('log')
+#ax1.set_yscale('log')  # Applying log scale to individual axes
+#ax2.set_yscale('log')
+plt.show()
+'''
+
+### Taking some sample from the dataset , did the next work
+
+## Take some sample of the data
+
+data1= data.sample(frac = 0.1,random_state=1)
+
+data1.shape
+
+#Determine the number of fraud and valid transactions in the dataset
+
+Fraud = data1[data1['Class']==1]
+
+Valid = data1[data1['Class']==0]
+
+outlier_fraction = len(Fraud)/float(len(Valid))
+
+print(outlier_fraction)
+
+print("Fraud Cases : {}".format(len(Fraud)))
+
+print("Valid Cases : {}".format(len(Valid)))
+
+
+## Correlation
+import seaborn as sns
+#get correlations of each features in dataset
+corrmat = data1.corr()
+top_corr_features = corrmat.index
+plt.figure(figsize=(20,20))
+#plot heat map
+g=sns.heatmap(data[top_corr_features].corr(),annot=True,cmap="RdYlGn")
+
+
+
+
+
+### Trying Isolation Forest Technique
+
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, random_state = 42)
+
+
+classifier = {
+    #"Logistic Regression": LogisticRegression(),
+    "Isolation Forest":IsolationForest(contamination=outlier_fraction
+
+                                        ,random_state=42, verbose=0)}
+
+
+for name, clf in classifier.items():
+    print(f"\n=========={name}===========")
+    clf.fit(x_train, y_train)
+    y_pred = clf.predict(x_test)
+    print(f"\n Accuaracy: {accuracy_score(y_test, y_pred)}")
+    print(f"\n Precision: {precision_score(y_test, y_pred,average='micro')}")
+    print(f"\n Recall: {recall_score(y_test, y_pred,average='micro')}")
+    print(f"\n F1 Score: {f1_score(y_test, y_pred,average='micro')}")
+
+
+### trying 2nd
+
+
+#Create independent and Dependent Features
+columns = data1.columns.tolist()
+# Filter the columns to remove data we do not want
+columns = [c for c in columns if c not in ["Class"]]
+# Store the variable we are predicting
+target = "Class"
+# Define a random state
+state = np.random.RandomState(42)
+X = data1[columns]
+Y = data1[target]
+X_outliers = state.uniform(low=0, high=1, size=(X.shape[0], X.shape[1]))
+# Print the shapes of X & Y
+print(X.shape)
+print(Y.shape)
+
+##Define the outlier detection methods
+
+classifiers = {
+    "Isolation Forest":IsolationForest(
+                                       contamination=outlier_fraction
+                                        ,random_state=42, verbose=0)}
+
+ISF=classifiers["Isolation Forest"]
+
+ISF.fit(X)
+scores_prediction = ISF.decision_function(X)
+y_pred = ISF.predict(X)
+#Reshape the prediction values to 0 for Valid transactions , 1 for Fraud transactions
+y_pred[y_pred == 1] = 0
+y_pred[y_pred == -1] = 1
+n_errors = (y_pred != Y).sum()
+
+
+print("Isolation Forest:",n_errors)
+
+
+print("accuracy:",accuracy_score(Y,y_pred))
+
+
+# AUC Score
+auc_score = roc_auc_score(Y, y_pred)
+print(f'AUC: {auc_score:.4f}')
+
+# Classification report (Precision, Recall, F1-score)
+print("\nClassification Report:")
+print(classification_report(Y, y_pred))
+
+# 5. Visualization
+# Scatter plot of PCA1 vs PCA2 with anomaly labels
+plt.scatter(X['V1'], X['V2'], c=y_pred, cmap='coolwarm', label='Predicted')
+plt.title('Fraud vs Non-Fraud (Red = Fraud)')
+plt.xlabel('PCA1')
+plt.ylabel('PCA2')
+plt.show()
+
+
+
+### Undersampling
+
+normal_sample = normal.sample(n=473)
+
+normal_sample.shape
+
+new_data = pd.concat([normal_sample,fraud], ignore_index=True)
+
+new_data['Class'].value_counts()
+
+X = new_data.drop('Class', axis = 1)
+y= new_data['Class']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
+
+classifier = {
+    "Logistic Regression": LogisticRegression(),
+    "Decision Tree Classifier": DecisionTreeClassifier()
+}
+
+for name, clf in classifier.items():
+    print(f"\n=========={name}===========")
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    print(f"\n Accuaracy: {accuracy_score(y_test, y_pred)}")
+    print(f"\n ROC AUC Score:{roc_auc_score(y_test, y_pred)}")
+    print(f"\n Precision: {precision_score(y_test, y_pred)}")
+    print(f"\n Recall: {recall_score(y_test, y_pred)}")
+    print(f"\n F1 Score: {f1_score(y_test, y_pred)}")
+
+### OVERSAMPLING
+
+X = data.drop('Class', axis = 1)
+y= data['Class']
+
+from imblearn.over_sampling import SMOTE
+
+X_res, y_res = SMOTE().fit_resample(X,y)
+
+
+y_res.value_counts()
+
+X_train, X_test, y_train, y_test = train_test_split(X_res, y_res, test_size = 0.2, random_state = 42)
+
+classifier = {
+    "Logistic Regression": LogisticRegression(),
+    "Decision Tree Classifier": DecisionTreeClassifier()
+}
+
+for name, clf in classifier.items():
+    print(f"\n=========={name}===========")
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    print(f"\n Accuaracy: {accuracy_score(y_test, y_pred)}")
+    print(f"ROC AUC Score:{roc_auc_score(y_test, y_pred)}")
+    print(f"\n Precision: {precision_score(y_test, y_pred)}")
+    print(f"\n Recall: {recall_score(y_test, y_pred)}")
+    print(f"\n F1 Score: {f1_score(y_test, y_pred)}")
+
+dtc = DecisionTreeClassifier()
+dtc.fit(X_res, y_res)
+
+import joblib
+
+joblib.dump(dtc, "credit_card_fraud_detection_model.pkl")
+
+model = joblib.load("credit_card_fraud_detection_model.pkl")
+
+pred = model.predict([[-1.35980713, -0.07278117,  2.53634674,  1.37815522, -0.33832077,
+        0.46238778,  0.23959855,  0.0986979 ,  0.36378697,  0.09079417,
+       -0.55159953, -0.61780086, -0.99138985, -0.31116935,  1.46817697,
+       -0.47040053,  0.20797124,  0.02579058,  0.40399296,  0.2514121 ,
+       -0.01830678,  0.27783758, -0.11047391,  0.06692807,  0.12853936,
+       -0.18911484,  0.13355838, -0.02105305,  0.24496426]])
+
+pred[0]
+
+if pred[0] == 0:
+    print("Normal Transcation")
+else:
+    print("Fraud Transcation")
+
